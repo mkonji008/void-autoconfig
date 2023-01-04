@@ -10,7 +10,7 @@ echo "Enter 'i3' to install i3 window manager, 'bspwm' to install bspwm, 'xfce' 
 read input
 
 if [ "$input" == "i3" ]; then
-  sudo xbps-install -S i3 i3lock polybar nm-applet xfce4-power-manager picom nitrogen xrandr arandr flameshot copyq pavucontrol thunar
+  sudo xbps-install -S i3 i3lock polybar nm-applet xfce4-power-manager picom nitrogen xrandr arandr flameshot copyq pulseaudio pavucontrol thunar rofi blueman
   cp i3/myconfigfile.txt ~/.config/i3/
 elif [ "$input" == "bspwm" ]; then
   sudo xbps-install -S bspwm sxhkd polybar xfce4-terminal 
