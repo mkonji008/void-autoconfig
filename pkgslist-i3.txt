@@ -1,0 +1,14 @@
+i3lock 
+polybar 
+nm-applet 
+xfce4-power-manager
+picom
+nitrogen
+xrandr
+arandr
+pulseaudio
+pulseaudio-utils
+pavucontrol
+pulsemixer
+alsa-plugins-pulseaudio
+
