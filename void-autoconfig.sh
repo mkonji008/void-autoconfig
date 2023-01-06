@@ -83,7 +83,7 @@ echo "SpaceVim Installed. Please run vim post script completion to auto install 
 echo "Enter 'i3', 'bspwm', 'gnome', or 'kde' to install the corresponding window manager: "
 read wm
 echo "Now Installing and Configuring $wm."
-
+cd ~/git/void-autoconfig
 # Install selected window manager and copy configuration file
 if [ "$wm" == "i3" ]; then
   sudo xbps-install -S i3
@@ -106,11 +106,11 @@ else
 fi
 
 # Check for package list file
-if [ -f "pkgslist-$wm.txt" ]; then
+if [ -f "packages/pkgslist-$wm.txt" ]; then
   # Install packages from package list file
   while read pkg; do
     sudo xbps-install -S "$pkg"
-  done < "pkgslist-$wm.txt"
+  done < "packages/pkgslist-$wm.txt"
 fi
 
 echo "WM/DE Installation complete, moving onto next step."
@@ -253,3 +253,50 @@ while read -r alias; do
   fi
 done < fish-aliases.txt
 echo "Aliases added."
+
+##
+# Install Bluetooth and GUI
+if sudo xbps-install -S bluez bluez-utils blueman; then
+  echo "Bluetooth software and GUI installed."
+else
+  echo "Error installing Bluetooth packages and GUI. Exiting."
+  exit 1
+fi
+
+# Enable Bluetooth service
+if sudo ln -s /etc/sv/bluetoothd /var/service/; then
+  echo "Bluetooth service enabled."
+else
+  echo "Error enabling Bluetooth service. Exiting."
+  exit 1
+fi
+
+echo "Installation complete."
+
+##
+# Set wallpaper file path
+wallpaper_path=~/git/void-autoconfig/wallpaper.png
+
+# Create Pictures/wallpaper directory if it does not exist
+if [ ! -d ~/Pictures/wallpaper ]; then
+  mkdir -p ~/Pictures/wallpaper
+fi
+
+# Copy wallpaper file to Pictures/wallpaper directory
+if cp "$wallpaper_path" ~/Pictures/wallpaper/; then
+  echo "Wallpaper copied to Pictures/wallpaper directory."
+else
+  echo "Error copying wallpaper. Exiting."
+  exit 1
+fi
+
+# Set wallpaper with Nitrogen
+if nitrogen --set-scaled ~/Pictures/wallpaper/wallpaper.png; then
+  echo "Wallpaper set with Nitrogen."
+else
+  echo "Error setting wallpaper with Nitrogen. Exiting."
+  exit 1
+fi
+
+echo "Wallpaper set successfully.
+"
