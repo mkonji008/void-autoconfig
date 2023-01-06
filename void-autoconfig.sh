@@ -1,6 +1,6 @@
 #!/bin/bash
 ##
-echo "Void Linux autoconfig By-mkonji "
+echo "Void Linux autoconfig By-mkonji."
 
 # Redirect output of the script to a log file
 exec > >(tee logfile.txt)
@@ -69,13 +69,29 @@ echo "Installation and configuration completed" || \
 echo "Error. Exiting." && exit 1
 
 ##
-# Install SpacevVim
-echo "Instaling SpaceVim."
+# Install SpaceVim
+echo "Installing SpaceVim."
+if curl -sLf https://spacevim.org/install.sh | bash; then
+  echo "SpaceVim installed successfully."
+else
+  echo "Error installing SpaceVim. Exiting."
+  exit 1
+fi
 
-curl -sLf https://spacevim.org/install.sh | bash
-cp SpaceVim/init.toml ~/.SpaceVim.d/init.toml
+# Create .SpaceVim.d directory if it does not exist
+if [ ! -d "$HOME/.SpaceVim.d" ]; then
+  mkdir "$HOME/.SpaceVim.d"
+fi
 
-echo "SpaceVim Installed. Please run vim post script completion to auto install plugins"
+# Copy init.toml to .SpaceVim.d
+if cp SpaceVim/init.toml "$HOME/.SpaceVim.d/init.toml"; then
+  echo "init.toml copied to .SpaceVim.d successfully."
+else
+  echo "Error copying init.toml. Exiting."
+  exit 1
+fi
+
+echo "SpaceVim set up successfully."
 
 ## Install WM/DE
 #
@@ -116,9 +132,45 @@ echo "WM/DE Installation complete, moving onto next step."
 
 ##
 # Pull void-src and configure it
-git clone https://github.com/void-linux/void-packages.git
+# Clone Void Linux source code repository
+if git clone https://github.com/void-linux/void-packages.git; then
+  echo "Void Linux source code repository cloned."
+else
+  echo "Error cloning Void Linux source code repository. Exiting."
+  exit 1
+fi
+
+# Change to void-packages directory
 cd void-packages
-./xbps-src binary-bootstrap
+
+# Run binary-bootstrap script
+if ./xbps-src binary-bootstrap; then
+  echo "Binary bootstrap completed successfully."
+else
+  echo "Error running binary-bootstrap script. Exiting."
+  exit 1
+fi
+
+echo "Void Linux source repository set up successfully."
+
+##
+# Create home folders 
+echo "Creating home folder structure."
+
+# Create array of folder names
+folders=(Documents Music Pictures Videos)
+
+# Loop through array and create each folder
+for folder in "${folders[@]}"; do
+  if mkdir "$HOME/$folder"; then
+    echo "$folder directory created."
+  else
+    echo "Error creating $folder directory. Exiting."
+    exit 1
+  fi
+done
+
+echo "Home directory folders created successfully."
 
 ## 
 # Display Configuration
@@ -369,3 +421,5 @@ else
 fi
 
 echo "Nix package manager set up successfully."
+
+exit
