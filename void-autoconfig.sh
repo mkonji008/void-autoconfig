@@ -138,7 +138,7 @@ else
   exit 1
 fi
 
-echo "Installation complete."
+echo "Display adapter successfully installed."
 
 ##
 # Check for display adapter
@@ -270,9 +270,12 @@ else
   exit 1
 fi
 
-echo "Installation complete."
+echo "Bluetooth installation adn configuration complete."
 
 ##
+# Configuring wallpaper 
+echo "Setting wallpaper."
+
 # Set wallpaper file path
 wallpaper_path=~/git/void-autoconfig/wallpaper.png
 
@@ -298,3 +301,71 @@ else
 fi
 
 echo "Wallpaper set successfully."
+
+##
+# Install Flatpak package manager
+echo "Installing Flatpak package manager."
+if sudo xbps-install -S flatpak; then
+  echo "Flatpak installed."
+else
+  echo "Error installing Flatpak. Exiting."
+  exit 1
+fi
+
+# Add Flathub repository
+if flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo; then
+  echo "Flathub repository added."
+else
+  echo "Error adding Flathub repository. Exiting."
+  exit 1
+fi
+
+echo "Flatpak and Flathub repository set up successfully."
+
+##
+# Install Nix package manager
+echo "Installing Nix package manager."
+
+if sudo xbps-install -Sy nix; then
+  echo "Nix installed."
+else
+  echo "Error installing Nix. Exiting."
+  exit 1
+fi
+
+# Add Nix daemon
+if sudo ln -s /etc/sv/nix-daemon /var/service/; then
+  echo "Nix daemon added."
+else
+  echo "Error adding Nix daemon. Exiting."
+  exit 1
+fi
+
+# Source profile to pick up changes
+if source /etc/profile; then
+  echo "Profile sourced."
+else
+  echo "Error sourcing profile. Exiting."
+  exit 1
+fi
+
+# Add all Nix channels
+if nix-channel --add https://nixos.org/channels/nixpkgs-unstable unstable && \
+   nix-channel --add https://nixos.org/channels/nixos-22.05 nixpkgs && \
+   nix-channel --update && \
+   nix-channel --list; then
+  echo "Nix channels added."
+else
+  echo "Error adding Nix channels. Exiting."
+  exit 1
+fi
+
+# Create symlink to applications directory
+if sudo ln -s "$HOME/.nix-profile/share/applications" "$HOME/.local/share/applications/nix-env"; then
+  echo "Symlink to applications directory created."
+else
+  echo "Error creating symlink to applications directory. Exiting."
+  exit 1
+fi
+
+echo "Nix package manager set up successfully."
