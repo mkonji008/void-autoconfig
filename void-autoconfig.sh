@@ -1,6 +1,10 @@
 #!/bin/bash
 ##
-echo "Void Linux autoconfig By-mkonji."
+tput setaf 1
+echo "Void Linux autoconfig by mkonji."
+tput sgr0
+tput setaf 3
+sudo -v
 
 # Redirect output of the script to a log file
 exec > >(tee logfile.txt)
@@ -16,7 +20,7 @@ fi
 
 ##
 # Update Void Linux
-if sudo xbps-install -Suv; then
+if sudo xbps-install -Suvy; then
   echo "Updating Void Linux."
 else
   echo "Error updating Void Linux. Exiting."
@@ -35,35 +39,35 @@ fi
 ##
 # Enable nonfree repositories
 echo "Enable non-free repositories."
-sudo xbps-install void-repo-nonfree void-repo-multilib void-repo-multilib-nonfree && \
+sudo xbps-install -Sy void-repo-nonfree void-repo-multilib void-repo-multilib-nonfree && \
 echo "Non-Free repos enabled." || 
 echo "Error enabling non-free repos."
 
 ##
 # Install essential packages
 echo "Installing essential packages."
-sudo xbps-install vim mkfontdir curl wget xz unzip zip vim gptfdisk xtools mtools mlocate ntfs-3g fuse-exfat bash-completion linux-headers gtksourceview4 ffmpeg mesa-vdpau mesa-vaapi htop neofetch timeshift ranger && \
+sudo xbps-install -Sy vim mkfontdir curl wget xz unzip zip vim gptfdisk xtools mtools mlocate ntfs-3g fuse-exfat bash-completion linux-headers gtksourceview4 ffmpeg mesa-vdpau mesa-vaapi htop neofetch timeshift ranger && \
 echo "Essential packages installed." || \
 echo "Error installing essential packages."
 
 ##
 # Install developer Packages
 echo "Installing developer packages."
-sudo xbps-install autoconf automake bison m4 make libtool flex meson ninja optipng sassc python python3 python3-piph&& \
+sudo xbps-install -Sy autoconf automake bison m4 make libtool flex meson ninja optipng sassc python python3 python3-piph&& \
 echo "Developer packages installed." || \
 echo "Error installing developer packages."
 
 ##
 # Install security
 echo "Installing security packages."
-sudo xbps-install gpg gpg2 yadm pass && \
+sudo xbps-install -Sy gpg gpg2 yadm pass && \
 echo "Installation of security packages complete." || \
 echo "Error installing security packages."
 
 ##
 # Install xorg, dbus and elogind and enable their services
 echo "Installing xorg, dbus, and elogind and enabling services."
-sudo xbps-install xorg dbus elogind && \
+sudo xbps-install -Sy xorg dbus elogind && \
 sudo ln -s /etc/sv/dbus /var/service/ && \
 sudo ln -s /etc/sv/elogind /var/service/ && \
 echo "Installation and configuration completed" || \
@@ -102,20 +106,20 @@ echo "Now Installing and Configuring $wm."
 cd ~/git/void-autoconfig
 # Install selected window manager and copy configuration file
 if [ "$wm" == "i3" ]; then
-  sudo xbps-install -S i3
+  sudo xbps-install -Sy i3
   mkdir ~/.config/i3
   cp i3/config ~/.config/i3/config
   mkdir ~/.config/polybar
   cp polybar/config.ini ~/.config/polybar/config.ini
 elif [ "$wm" == "bspwm" ]; then
-  sudo xbps-install -S bspwm sxhkd polybar
+  sudo xbps-install -Sy bspwm sxhkd polybar
   cp bspwm/config ~/.config/bspwm/config
 elif [ "$wm" == "gnome" ]; then
-  sudo xbps-install -s gnome gdm
+  sudo xbps-install -Sy gnome gdm
   sudo ln -s /etc/sv/gdm /var/service
-  sudo xbps-install -Rs xdg-desktop-portal xdg-desktop-portal-gtk xdg-user-dirs xdg-user-dirs-gtk xdg-utils
+  sudo xbps-install -Rsy xdg-desktop-portal xdg-desktop-portal-gtk xdg-user-dirs xdg-user-dirs-gtk xdg-utils
 elif [ "$wm" == "kde" ]; then
-  sudo xbps-install -S kde
+  sudo xbps-install -Sy kde
 else
   echo "Invalid input. Exiting."
   exit 1
@@ -125,7 +129,7 @@ fi
 if [ -f "packages/pkgslist-$wm.txt" ]; then
   # Install packages from package list file
   while read -r pkg; do
-    sudo xbps-install -S "$pkg"
+    sudo xbps-install -Sy "$pkg"
   done < "packages/pkgslist-$wm.txt"
 fi
 
@@ -181,11 +185,11 @@ echo "Enter 'intel' to install Intel drivers and microcode, 'amd' to install AMD
 read -r drivers
 
 if [ "$drivers" == "intel" ]; then
-  sudo xbps-install -S xf86-video-intel linux-firmware-intel intel-ucode mesa-dri vulkan-loader mesa-vulkan-intel intel-video-accel
+  sudo xbps-install -Sy xf86-video-intel linux-firmware-intel intel-ucode mesa-dri vulkan-loader mesa-vulkan-intel intel-video-accel
 elif [ "$drivers" == "amd" ]; then
-  sudo xbps-install -S linux-firmware-amd xf86-video-amdgpu amd-ucode mesa-dri vulkan-loader mesa-vulkan-radeon mesa-vaapi mesa-vdpau
+  sudo xbps-install -Sy linux-firmware-amd xf86-video-amdgpu amd-ucode mesa-dri vulkan-loader mesa-vulkan-radeon mesa-vaapi mesa-vdpau
 elif [ "$drivers" == "nvidia" ]; then
-  sudo xbps-install -S nvidia nvidia-settings
+  sudo xbps-install -Sy nvidia nvidia-settings
 else
   echo "Invalid input. Exiting."
   exit 1
@@ -239,7 +243,7 @@ echo "(Powertop/TLP config) Is this a laptop? (yes/no)"
 read -r is_laptop
 
 if [ "$is_laptop" == "yes" ]; then
-  sudo xbps-install -S tlp tlp-rdw powertop
+  sudo xbps-install -Sy tlp tlp-rdw powertop
   sudo ln -sv /etc/sv/tlp /var/service
   echo "tlp, tlp-rdw, and powertop Installed."
 else
@@ -250,7 +254,7 @@ fi
 # Logging Daemon Activation
 # Install a logging Daemon as void does not have one by default
 echo "Logging Daemon Activation."
-sudo xbps-install -Rs socklog-void && \
+sudo xbps-install -Rsy socklog-void && \
 sudo ln -s /etc/sv/socklog-unix /var/service/ && \
 sudo ln -s /etc/sv/nanoklogd /var/service/ && \
 echo "Successfully installed and configured Cronie." || \
@@ -273,7 +277,7 @@ echo "Failure installing and configuring Profile Sync Daemon. Exiting." && exit 
 ##
 # Install fonts 
 echo "Installing Fonts."
-sudo xbps-install -Rs noto-fonts-emoji noto-fonts-ttf noto-fonts-ttf-extra nerd-fonts && \
+sudo xbps-install -Rsy noto-fonts-emoji noto-fonts-ttf noto-fonts-ttf-extra nerd-fonts && \
 echo "Installed Noto and Nerd Fonts." || \
 echo "Error installing Noto and Nerd Fonts. Exiting." && exit 1
 
@@ -286,7 +290,7 @@ echo "XBPS_ALLOW_RESTRICTED=yes" >> etc/conf
 ##
 # Install Syncthing and enable autostart
 echo "Installing Syncthing." 
-sudo xbps-install -Rs syncthing && \
+sudo xbps-install -Rsy syncthing && \
 sudo cp /usr/share/applications/syncthing-start.desktop ~/.config/autostart/ && \
 echo "Installed Syncthing. Please configure manually." || \
 echo "Failure to install Syncthing. Exiting." && exit 1
@@ -308,7 +312,7 @@ echo "Aliases added."
 
 ##
 # Install Bluetooth and GUI
-if sudo xbps-install -S bluez bluez-utils blueman; then
+if sudo xbps-install -Sy bluez bluez-utils blueman; then
   echo "Bluetooth software and GUI installed."
 else
   echo "Error installing Bluetooth packages and GUI. Exiting."
@@ -358,7 +362,7 @@ echo "Wallpaper set successfully."
 ##
 # Install Flatpak package manager
 echo "Installing Flatpak package manager."
-if sudo xbps-install -S flatpak; then
+if sudo xbps-install -Sy flatpak; then
   echo "Flatpak installed."
 else
   echo "Error installing Flatpak. Exiting."

@@ -1,6 +1,5 @@
 i3lock 
 polybar 
-nm-applet 
 xfce4-power-manager
 picom
 nitrogen
