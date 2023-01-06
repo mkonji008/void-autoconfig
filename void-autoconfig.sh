@@ -33,7 +33,6 @@ else
 
 ##
 # Enable nonfree repositories
-sudo xbps-install void-repo-nonfree void-repo-multilib void-repo-multilib-nonfree
 echo "Enable non-free repositories."
 sudo xbps-install void-repo-nonfree void-repo-multilib void-repo-multilib-nonfree && \
 echo "Developer packages installed." || \
@@ -298,5 +297,4 @@ else
   exit 1
 fi
 
-echo "Wallpaper set successfully.
-"
+echo "Wallpaper set successfully."
