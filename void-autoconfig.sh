@@ -30,6 +30,7 @@ if sudo xcheckrestart; then
 else
   echo "Error restarting services. Exiting."
   exit 1
+fi
 
 ##
 # Enable nonfree repositories
@@ -96,7 +97,7 @@ echo "SpaceVim set up successfully."
 ## Install WM/DE
 #
 echo "Enter 'i3', 'bspwm', 'gnome', or 'kde' to install the corresponding window manager: "
-read wm
+read -r wm
 echo "Now Installing and Configuring $wm."
 cd ~/git/void-autoconfig
 # Install selected window manager and copy configuration file
@@ -123,7 +124,7 @@ fi
 # Check for package list file
 if [ -f "packages/pkgslist-$wm.txt" ]; then
   # Install packages from package list file
-  while read pkg; do
+  while read -r pkg; do
     sudo xbps-install -S "$pkg"
   done < "packages/pkgslist-$wm.txt"
 fi
@@ -177,7 +178,7 @@ echo "Home directory folders created successfully."
 # Prompt for what display adapter to install, install it and it's mircrocode
 # After installing the driver check what display adapter is used and add the tearfree option to the xorg.conf file
 echo "Enter 'intel' to install Intel drivers and microcode, 'amd' to install AMD drivers and microcode, or 'nvidia' to install NVIDIA drivers: "
-read drivers
+read -r drivers
 
 if [ "$drivers" == "intel" ]; then
   sudo xbps-install -S xf86-video-intel linux-firmware-intel intel-ucode mesa-dri vulkan-loader mesa-vulkan-intel intel-video-accel
@@ -235,7 +236,7 @@ echo "Error installing and enabling Cronie service. Exiting." && exit 1
 ##
 # Install TLP and PowerTop if this is a laptop
 echo "(Powertop/TLP config) Is this a laptop? (yes/no)"
-read is_laptop
+read -r is_laptop
 
 if [ "$is_laptop" == "yes" ]; then
   sudo xbps-install -S tlp tlp-rdw powertop
