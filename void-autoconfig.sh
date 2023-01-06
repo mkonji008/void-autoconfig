@@ -36,38 +36,38 @@ fi
 # Enable nonfree repositories
 echo "Enable non-free repositories."
 sudo xbps-install void-repo-nonfree void-repo-multilib void-repo-multilib-nonfree && \
-echo "Developer packages installed." || \
-echo "Error enabling non-free repos. Exiting." && exit 1
+echo "Non-Free repos enabled." || 
+echo "Error enabling non-free repos."
 
 ##
 # Install essential packages
 echo "Installing essential packages."
-sudo xbps-install -S vim curl wget xz unzip zip vim gptfdisk xtools mtools mlocate ntfs-3g fuse-exfat bash-completion linux-headers gtksourceview4 ffmpeg mesa-vdpau mesa-vaapi htop neofetch timeshift ranger && \
-echo "Developer packages installed." || \
-echo "Error installing essential packages. Exiting." && exit 1
+sudo xbps-install vim mkfontdir curl wget xz unzip zip vim gptfdisk xtools mtools mlocate ntfs-3g fuse-exfat bash-completion linux-headers gtksourceview4 ffmpeg mesa-vdpau mesa-vaapi htop neofetch timeshift ranger && \
+echo "Essential packages installed." || \
+echo "Error installing essential packages."
 
 ##
 # Install developer Packages
 echo "Installing developer packages."
-sudo xbps-install -S autoconf automake bison m4 make libtool flex meson ninja optipng sassc python python3 python3-piph&& \
+sudo xbps-install autoconf automake bison m4 make libtool flex meson ninja optipng sassc python python3 python3-piph&& \
 echo "Developer packages installed." || \
-echo "Error installing developer packages. Exiting." && exit 1
+echo "Error installing developer packages."
 
 ##
 # Install security
 echo "Installing security packages."
-sudo xbps-install -S gpg gpg2 yadm pass && \
+sudo xbps-install gpg gpg2 yadm pass && \
 echo "Installation of security packages complete." || \
-echo "Error installing security packages. Exiting." && exit 1
+echo "Error installing security packages."
 
 ##
 # Install xorg, dbus and elogind and enable their services
 echo "Installing xorg, dbus, and elogind and enabling services."
-sudo xbps-install -S xorg dbus elogind && \
+sudo xbps-install xorg dbus elogind && \
 sudo ln -s /etc/sv/dbus /var/service/ && \
 sudo ln -s /etc/sv/elogind /var/service/ && \
 echo "Installation and configuration completed" || \
-echo "Error. Exiting." && exit 1
+echo "Error installing/enabling xorg, dbus and elogind."
 
 ##
 # Install SpaceVim
