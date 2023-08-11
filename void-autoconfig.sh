@@ -84,7 +84,7 @@ if [ -d ~/.oh-my-bash ]; then
 else
   echo "oh-my-bash directory does not exist, continuing oh-my-bash installation"
 fi
-if curl -sLf https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh) | bash; then
+if curl -sLf https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh | bash; then
   cp dotfiles/.bashrc
   rm -rf .bashrc.omb-backup-*
   echo "oh-my-bash has been installed"
@@ -154,7 +154,7 @@ sleep 1
 ##
 # Install NeoVim
 # install prerequsite
-if sudo xbps-install -Sy ripgrep; then
+if sudo xbps-install -Sy ripgrep neovim; then
 	echo "Installed/Updated ripgrep."
 else
 	echo "Error installing/updating ripgrep prerequsite. Exiting."
