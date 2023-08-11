@@ -59,13 +59,13 @@ sudo xbps-install -Sy libltdl libltdl-32bit curl wget xz unzip zip cfdisk xtools
 	echo "Error installing essential packages."
 # Install essential packages
 if [ ! -f packages/main_packages.txt ]; then
-  echo "The main_packages.txt file does not exist."
-  exit 1
+	echo "The main_packages.txt file does not exist."
+	exit 1
 fi
 main_packages=$(cat packages/main_packages.txt)
 for main_pkgs in $main_packages; do
-  xbps-install -Sy $main_pkgs
-  echo "Main system packages installed."
+	xbps-install -Sy $main_pkgs
+	echo "Main system packages installed."
 done
 sleep 1
 
@@ -80,52 +80,51 @@ sudo xbps-install -Sy autoconf automake make libtool optipng sassc python python
 echo "Installing ohmybash and copying .bashrc"
 rm ~/.bashrc
 if [ -d ~/.oh-my-bash ]; then
-  rm -rf ~/.oh-my-bash
+	rm -rf ~/.oh-my-bash
 else
-  echo "oh-my-bash directory does not exist, continuing oh-my-bash installation"
+	echo "oh-my-bash directory does not exist, continuing oh-my-bash installation"
 fi
 if curl -sLf https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh | bash; then
-  cp dotfiles/.bashrc
-  rm -rf .bashrc.omb-backup-*
-  echo "oh-my-bash has been installed"
-else 
-  echo "There has been an error installing oh-my-bash, exiting"
-  exit 1
+	cp dotfiles/.bashrc
+	rm -rf .bashrc.omb-backup-*
+	echo "oh-my-bash has been installed"
+else
+	echo "There has been an error installing oh-my-bash, exiting"
+	exit 1
 fi
 sleep 1
 
-
 if [ -f "packages/developer_packages.txt" ]; then
-  read -p "Do you want to install developer doodads? (yes/no) " dev_doodads
-  if [ "$dev_doodads" = "yes" ]; then
-    while read devstuff; do
-      xbps-install -Sy $devstuff
-    done < developer_packages.txt
-    echo "Downloading Go..."
-  curl -OL https://golang.org/dl/go1.18.3.linux-amd64.tar.gz
-  echo "Extracting Go..."
-  tar -xzvf go1.18.3.linux-amd64.tar.gz
-  echo "Setting Gopath..."
-  export GOPATH=$HOME/go
-  echo "Adding Go to the PATH..."
-  echo "export PATH=$PATH:$GOPATH/bin" >> ~/.bashrc
-  source ~/.bashrc
-  echo "Go has been installed."
-  else
-    echo "Guess you did not want to install the developer doodads, exiting."
-    exit 1
-  fi
+	read -p "Do you want to install developer doodads? (yes/no) " dev_doodads
+	if [ "$dev_doodads" = "yes" ]; then
+		while read devstuff; do
+			xbps-install -Sy $devstuff
+		done <developer_packages.txt
+		echo "Downloading Go..."
+		curl -OL https://golang.org/dl/go1.18.3.linux-amd64.tar.gz
+		echo "Extracting Go..."
+		tar -xzvf go1.18.3.linux-amd64.tar.gz
+		echo "Setting Gopath..."
+		export GOPATH=$HOME/go
+		echo "Adding Go to the PATH..."
+		echo "export PATH=$PATH:$GOPATH/bin" >>~/.bashrc
+		source ~/.bashrc
+		echo "Go has been installed."
+	else
+		echo "Guess you did not want to install the developer doodads, exiting."
+		exit 1
+	fi
 else
-  echo "The developer_packages.txt file does not exist, exiting."
-  exit 1
+	echo "The developer_packages.txt file does not exist, exiting."
+	exit 1
 fi
 echo "Developer doodads installed"
-sleep 1 
+sleep 1
 
 ##
 # Install xorg, dbus and elogind and enable their services
 echo "Installing xorg, dbus, and lightdm and enabling services."
-sudo xbps-install -Sy xorg-minimal xorg-server xorg-server-common xorg-video-drivers libX11 libXpm dbus lightdm lightdm-gtk-greeter &&
+sudo xbps-install -Sy xorg-minimal lightdm lightdm-gtk3-greeter &&
 	sudo ln -s /etc/sv/dbus /var/service/ &&
 	sudo ln -s /etc/sv/lightdm /var/service/ &&
 	echo "Installation and configuration completed" ||
@@ -134,21 +133,30 @@ sleep 1
 
 ##
 # opendoas config
- echo "Setting up doas, minimal sudo alternative"
- sudo xbps-install -Sy opendoas
- # Prompt the user to enter the username
+echo "Setting up doas, minimal sudo alternative"
+sudo xbps-install -Sy opendoas
+# Prompt the user to enter the username
 read -p "Enter the username: " user_name
 # Confirm the username
-echo "Are you sure your username is $user_name? (yes/no) " doas_verify
-# If the user answers yes, create the doas.conf file
-if [ "$doas_verify" = "yes" ]; then
-  # Create the doas.conf file
-  sudo echo "permit persist $user_name as root" > /etc/doas.conf
+echo "Are you sure your username is $user_name? (yes/no) "
+read -r doas_verify
+# Check if the file does not exist
+if [ ! -f /etc/doas.conf ]; then
+	# Read and verify the username
+	while [[ $doas_verify != "yes" ]] && [[ $doas_verify != "no" ]]; do
+		echo "Please enter yes or no."
+		read -r doas_verify
+	done
+	# Create the doas.conf file
+	if [[ $doas_verify == "yes" ]]; then
+		sudo echo "permit persist $user_name as root" >/etc/doas.conf
+		echo "opendoas has been configured for $user_name"
+	else
+		echo "The doas.conf file was not created."
+	fi
 else
-  # The user does not want to create the doas.conf file, exit
-  echo "The user does not want to create the doas.conf file, exiting."
-  exit 1
-echo "opendoas has been configured"
+	echo "The doas.conf file already exists, skipping."
+fi
 sleep 1
 
 ##
@@ -188,8 +196,8 @@ if [ "$wm" == "i3" ]; then
 	mkdir ~/.config/i3status
 	cp dotfiles/i3status/config ~/.config/i3status/config
 elif [ "$wm" == "xfce" ]; then
-# xfce not really setup yet, needs some additonal love
-sudo xbps-install -Sy xfce4
+	# xfce not really setup yet, needs some additonal love
+	sudo xbps-install -Sy xfce4
 else
 	echo "Invalid input. Exiting."
 	exit 1
@@ -223,7 +231,7 @@ sleep 1
 # copy dotfiles for xfce4-terminal
 echo "Copy dotfiles for xfce4-terminal."
 if [ ! -d ~/.config/xfce4/terminal ]; then
-  mkdir ~/.config/xfce4/terminal
+	mkdir ~/.config/xfce4/terminal
 fi
 cp -r dotfiles/xfce4/terminal ~/.config/xfce4/terminal
 ##
@@ -251,8 +259,8 @@ if [ "$drivers" = "nvidia" ]; then
 		# Copy the nvidia configuration
 		cp dotfiles/.nvidia-settings-rc ~/.nvidia-settings-rc
 		cp dotfiles/.screenlayout.sh ~/.config/.screenlayout.sh
-    sudo chmod u+x ~/.config/.screenlayout.sh
-    echo "longboi monitor configured"
+		sudo chmod u+x ~/.config/.screenlayout.sh
+		echo "longboi monitor configured"
 	fi
 else
 	echo "Not using longboi I suppose?, continuing with the script."
@@ -292,7 +300,7 @@ sleep 1
 ##
 # copy fonts
 echo "Installing Fonts."
-sudo xbps-install -Rsy nerd-fonts anthy anthy-unicode font-mplus ipafont-fonts-otf firefox-esr-i18n-ja ibus-anthy libanthy libanthy-unicode  &&
+sudo xbps-install -Rsy nerd-fonts anthy anthy-unicode font-mplus ipafont-fonts-otf firefox-esr-i18n-ja ibus-anthy libanthy libanthy-unicode &&
 	echo "Installed Fonts." ||
 	echo "Error installing Fonts. Exiting." && exit 1
 sleep 1
@@ -392,12 +400,12 @@ else
 	exit 1
 fi
 echo "Nix package manager set up successfully. Now installing some nix packages."
-sleep 1 
+sleep 1
 if [ -x "$(which nix)" ]; then
-  echo "nix verified to be installed, installing nix packages."
-  nix-env -iA nixpkgs.google-drive-ocamlfuse
+	echo "nix verified to be installed, installing nix packages."
+	nix-env -iA nixpkgs.google-drive-ocamlfuse
 else
-  echo "nix package manager seems to not exist, skipping installation of nix packages"
+	echo "nix package manager seems to not exist, skipping installation of nix packages"
 fi
 
 ##
