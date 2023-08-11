@@ -174,7 +174,7 @@ if [ ! -d "~/.config/nvim" ]; then
 fi
 echo "Configuring best editor."
 # Copy nvim configuration
-if cp -r "dotfiles/nvim/" "~/.config/nvim/"; then
+if cp -r dotfiles/nvim/ ~/.config/nvim/; then
 	echo "Copied NeoVim dots successfully."
 else
 	echo "Error copying nvim dots. Exiting."
