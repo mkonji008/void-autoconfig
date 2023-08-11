@@ -1,0 +1,17 @@
+Thunar
+arandr
+autotiling
+i3lock-color
+i3status
+nitrogen
+pavucontrol
+pcmanfm
+picom
+pulseaudio
+pulseaudio-utils
+rofi
+thunar-archive-plugin
+thunar-media-tags-plugin
+thunar-volman
+xfce4-power-manager
+xrandr

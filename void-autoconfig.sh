@@ -2,240 +2,279 @@
 ##
 tput setaf 1
 echo "Void Linux autoconfig by mkonji."
+sleep 2
 tput sgr0
-tput setaf 3
+tput setaf 2
 sudo -v
 
 # Redirect output of the script to a log file
 exec > >(tee logfile.txt)
 
-##
-# Update the xbps package manager 
-if sudo xbps-install -Syu xbps; then
-  echo "Installed/Updated xbps."
+echo "Checking internet access"
+sleep 2
+# Check if there is internet access
+if ping -c 1 google.com &>/dev/null; then
+	# There is internet access, continue
+	echo "Internet access is available."
 else
-  echo "Error installing/updating xbps. Exiting."
-  exit 1
+	# There is no internet access, exit
+	echo "Internet access is not available."
+	exit 1
 fi
+echo "This will only continue if there is internet access."
 
 ##
+echo "Installing xbps package manager,updating system, adding nonfree repos and installing some base packages."
+sleep 1
+# Update the xbps package manager
+if sudo xbps-install -Syu xbps; then
+	echo "Installed/Updated xbps."
+else
+	echo "Error installing/updating xbps. Exiting."
+	exit 1
+fi
 # Update Void Linux
 if sudo xbps-install -Suvy; then
-  echo "Updating Void Linux."
+	echo "Updating Void Linux."
 else
-  echo "Error updating Void Linux. Exiting."
-  exit 1
+	echo "Error updating Void Linux. Exiting."
+	exit 1
 fi
-
-##
 # Restart services post system update
 if sudo xcheckrestart; then
-  echo "Restarting updated services."
+	echo "Restarting updated services."
 else
-  echo "Error restarting services. Exiting."
+	echo "Error restarting services. Exiting."
+	exit 1
+fi
+# Enable nonfree repositories
+echo "Enabling non-free repositories."
+sudo xbps-install -Sy void-repo-nonfree void-repo-multilib void-repo-multilib-nonfree &&
+	echo "Non-Free repos enabled." ||
+	echo "Error enabling non-free repos."
+# Install essential packages
+echo "Installing base system packages."
+sudo xbps-install -Sy libltdl libltdl-32bit curl wget xz unzip zip cfdisk xtools mtools mlocate ntfs-3g fuse-exfat bash-completion linux-headers gtksourceview4 ffmpeg mesa-vdpau mesa-vaapi htop neofetch timeshift ranger &&
+	echo "Essential packages installed." ||
+	echo "Error installing essential packages."
+# Install essential packages
+if [ ! -f packages/main_packages.txt ]; then
+  echo "The main_packages.txt file does not exist."
   exit 1
 fi
-
-##
-# Enable nonfree repositories
-echo "Enable non-free repositories."
-sudo xbps-install -Sy void-repo-nonfree void-repo-multilib void-repo-multilib-nonfree && \
-echo "Non-Free repos enabled." || 
-echo "Error enabling non-free repos."
-
-##
-# Install essential packages
-echo "Installing essential packages."
-sudo xbps-install -Sy vim mkfontdir curl wget xz unzip zip vim gptfdisk xtools mtools mlocate ntfs-3g fuse-exfat bash-completion linux-headers gtksourceview4 ffmpeg mesa-vdpau mesa-vaapi htop neofetch timeshift ranger && \
-echo "Essential packages installed." || \
-echo "Error installing essential packages."
+main_packages=$(cat packages/main_packages.txt)
+for main_pkgs in $main_packages; do
+  xbps-install -S $main_pkgs
+  echo "Main system packages installed."
+done
+sleep 1
 
 ##
 # Install developer Packages
-echo "Installing developer packages."
-sudo xbps-install -Sy autoconf automake bison m4 make libtool flex meson ninja optipng sassc python python3 python3-piph&& \
-echo "Developer packages installed." || \
-echo "Error installing developer packages."
+echo "Installing dev doodads."
+sudo xbps-install -Sy autoconf automake make libtool optipng sassc python python3 python3-pip &&
+	echo "Developer packages installed." ||
+	echo "Error installing developer packages."
 
 ##
-# Install security
-echo "Installing security packages."
-sudo xbps-install -Sy gpg gpg2 yadm pass && \
-echo "Installation of security packages complete." || \
-echo "Error installing security packages."
+echo "Installing ohmybash and copying .bashrc"
+rm ~/.bashrc
+if [ -d ~/.oh-my-bash ]; then
+  rm -rf ~/.oh-my-bash
+else
+  echo "oh-my-bash directory does not exist, continuing oh-my-bash installation"
+fi
+if curl -sLf https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh) | bash; then
+  cp dotfiles/.bashrc
+  rm -rf .bashrc.omb-backup-*
+  echo "oh-my-bash has been installed"
+else 
+  echo "There has been an error installing oh-my-bash, exiting"
+  exit 1
+fi
+sleep 1
+
+
+if [ -f "packages/developer_packages.txt" ]; then
+  read -p "Do you want to install developer doodads? (yes/no) " dev_doodads
+  if [ "$dev_doodads" = "yes" ]; then
+    while read devstuff; do
+      xbps-install -S $devstuff
+    done < developer_packages.txt
+    echo "Downloading Go..."
+  curl -OL https://golang.org/dl/go1.18.3.linux-amd64.tar.gz
+  echo "Extracting Go..."
+  tar -xzvf go1.18.3.linux-amd64.tar.gz
+  echo "Setting Gopath..."
+  export GOPATH=$HOME/go
+  echo "Adding Go to the PATH..."
+  echo "export PATH=$PATH:$GOPATH/bin" >> ~/.bashrc
+  source ~/.bashrc
+  echo "Go has been installed."
+  else
+    echo "Guess you did not want to install the developer doodads, exiting."
+    exit 1
+  fi
+else
+  echo "The developer_packages.txt file does not exist, exiting."
+  exit 1
+fi
+echo "Developer doodads installed"
+sleep 1 
 
 ##
 # Install xorg, dbus and elogind and enable their services
-echo "Installing xorg, dbus, and elogind and enabling services."
-sudo xbps-install -Sy xorg dbus elogind && \
-sudo ln -s /etc/sv/dbus /var/service/ && \
-sudo ln -s /etc/sv/elogind /var/service/ && \
-echo "Installation and configuration completed" || \
-echo "Error installing/enabling xorg, dbus and elogind."
+echo "Installing xorg, dbus, and lightdm and enabling services."
+sudo xbps-install -Sy xorg dbus lightdm lightdm-gtk-greeter &&
+	sudo ln -s /etc/sv/dbus /var/service/ &&
+	sudo ln -s /etc/sv/lightdm /var/service/ &&
+	echo "Installation and configuration completed" ||
+	echo "Error installing/enabling xorg, dbus and lightdm."
+sleep 1
 
 ##
-# Install SpaceVim
-echo "Installing SpaceVim."
-if curl -sLf https://spacevim.org/install.sh | bash; then
-  echo "SpaceVim installed successfully."
+# opendoas config
+ echo "Setting up doas, minimal sudo alternative"
+ sudo xbps-install -Sy opendoas
+ # Prompt the user to enter the username
+read -p "Enter the username: " user_name
+# Confirm the username
+echo "Are you sure your username is $user_name? (yes/no) " doas_verify
+# If the user answers yes, create the doas.conf file
+if [ "$doas_verify" = "yes" ]; then
+  # Create the doas.conf file
+  sudo echo "permit persist $user_name as root" > /etc/doas.conf
 else
-  echo "Error installing SpaceVim. Exiting."
+  # The user does not want to create the doas.conf file, exit
+  echo "The user does not want to create the doas.conf file, exiting."
   exit 1
-fi
+echo "opendoas has been configured"
+sleep 1
 
-# Create .SpaceVim.d directory if it does not exist
-if [ ! -d "$HOME/.SpaceVim.d" ]; then
-  mkdir "$HOME/.SpaceVim.d"
-fi
-
-# Copy init.toml to .SpaceVim.d
-if cp SpaceVim/init.toml "$HOME/.SpaceVim.d/init.toml"; then
-  echo "init.toml copied to .SpaceVim.d successfully."
+##
+# Install NeoVim
+# install prerequsite
+if sudo xbps-install -Sy ripgrep; then
+	echo "Installed/Updated ripgrep."
 else
-  echo "Error copying init.toml. Exiting."
-  exit 1
+	echo "Error installing/updating ripgrep prerequsite. Exiting."
+	exit 1
 fi
-
-echo "SpaceVim set up successfully."
+# Create nvim directory if it does not exist
+if [ ! -d "~/.config/nvim" ]; then
+	mkdir "~/.config/nvim"
+fi
+echo "Configuring best editor."
+# Copy nvim configuration
+if cp -r "dotfiles/nvim/*" "~/.config/nvim/"; then
+	echo "Copied NeoVim dots successfully."
+else
+	echo "Error copying nvim dots. Exiting."
+	exit 1
+fi
+echo "NeoVim set up successfully."
+sleep 1
 
 ## Install WM/DE
 #
-echo "Enter 'i3', 'bspwm', 'gnome', or 'kde' to install the corresponding window manager: "
+echo "Enter 'i3' or 'xfce' to install the DE/WM"
 read -r wm
 echo "Now Installing and Configuring $wm."
-cd ~/git/void-autoconfig
 # Install selected window manager and copy configuration file
 if [ "$wm" == "i3" ]; then
-  sudo xbps-install -Sy i3
-  mkdir ~/.config/i3
-  cp i3/config ~/.config/i3/config
-  mkdir ~/.config/polybar
-  cp polybar/config.ini ~/.config/polybar/config.ini
-elif [ "$wm" == "bspwm" ]; then
-  sudo xbps-install -Sy bspwm sxhkd polybar
-  cp bspwm/config ~/.config/bspwm/config
-elif [ "$wm" == "gnome" ]; then
-  sudo xbps-install -Sy gnome gdm
-  sudo ln -s /etc/sv/gdm /var/service
-  sudo xbps-install -Rsy xdg-desktop-portal xdg-desktop-portal-gtk xdg-user-dirs xdg-user-dirs-gtk xdg-utils
-elif [ "$wm" == "kde" ]; then
-  sudo xbps-install -Sy kde
+	sudo xbps-install -Sy i3
+	mkdir ~/.config/i3
+	cp dotfiles/i3/config ~/.config/i3/config
+	mkdir ~/.config/i3status
+	cp dotfiles/i3status/config ~/.config/i3status/config
+elif [ "$wm" == "xfce" ]; then
+# xfce not really setup yet, needs some additonal love
+sudo xbps-install -Sy xfce4
 else
-  echo "Invalid input. Exiting."
-  exit 1
+	echo "Invalid input. Exiting."
+	exit 1
 fi
-
 # Check for package list file
-if [ -f "packages/pkgslist-$wm.txt" ]; then
-  # Install packages from package list file
-  while read -r pkg; do
-    sudo xbps-install -Sy "$pkg"
-  done < "packages/pkgslist-$wm.txt"
+if [ -f "packages/pkgslist_$wm.txt" ]; then
+	# Install packages from package list file
+	while read -r pkg; do
+		sudo xbps-install -Sy "$pkg"
+	done <"packages/pkgslist_$wm.txt"
 fi
-
 echo "WM/DE Installation complete, moving onto next step."
+sleep 1
 
 ##
-# Pull void-src and configure it
-# Clone Void Linux source code repository
-if git clone https://github.com/void-linux/void-packages.git; then
-  echo "Void Linux source code repository cloned."
-else
-  echo "Error cloning Void Linux source code repository. Exiting."
-  exit 1
-fi
-
-# Change to void-packages directory
-cd void-packages
-
-# Run binary-bootstrap script
-if ./xbps-src binary-bootstrap; then
-  echo "Binary bootstrap completed successfully."
-else
-  echo "Error running binary-bootstrap script. Exiting."
-  exit 1
-fi
-
-echo "Void Linux source repository set up successfully."
-
-##
-# Create home folders 
+# Create home folders
 echo "Creating home folder structure."
-
 # Create array of folder names
-folders=(Documents Music Pictures Videos)
-
+folders=(Documents Music Pictures Videos Downloads code git)
 # Loop through array and create each folder
 for folder in "${folders[@]}"; do
-  if mkdir "$HOME/$folder"; then
-    echo "$folder directory created."
-  else
-    echo "Error creating $folder directory. Exiting."
-    exit 1
-  fi
+	if mkdir "$HOME/$folder"; then
+		echo "$folder directory created."
+	else
+		echo "Error creating $folder directory. Exiting."
+		exit 1
+	fi
 done
-
-echo "Home directory folders created successfully."
-
-## 
+sleep 1
+##
+# copy dotfiles for xfce4-terminal
+echo "Copy dotfiles for xfce4-terminal."
+if [ ! -d ~/.config/xfce4/terminal ]; then
+  mkdir ~/.config/xfce4/terminal
+fi
+cp -r dotfiles/xfce4/terminal ~/.config/xfce4/terminal
+##
 # Display Configuration
 # Prompt for what display adapter to install, install it and it's mircrocode
 # After installing the driver check what display adapter is used and add the tearfree option to the xorg.conf file
-echo "Enter 'intel' to install Intel drivers and microcode, 'amd' to install AMD drivers and microcode, or 'nvidia' to install NVIDIA drivers: "
+echo "Enter 'intel' to install Intel display and microcode, 'amd' to install AMD display and microcode, or 'nvidia' to install NVIDIA drivers: "
 read -r drivers
-
 if [ "$drivers" == "intel" ]; then
-  sudo xbps-install -Sy xf86-video-intel linux-firmware-intel intel-ucode mesa-dri vulkan-loader mesa-vulkan-intel intel-video-accel
-elif [ "$drivers" == "amd" ]; then
-  sudo xbps-install -Sy linux-firmware-amd xf86-video-amdgpu amd-ucode mesa-dri vulkan-loader mesa-vulkan-radeon mesa-vaapi mesa-vdpau
+	sudo xbps-install -Sy xf86-video-intel linux-firmware-intel intel-ucode mesa-dri vulkan-loader mesa-vulkan-intel intel-video-accel
+elif [ "$display" == "amd" ]; then
+	sudo xbps-install -Sy linux-firmware-amd xf86-video-amdgpu amd-ucode mesa-dri vulkan-loader mesa-vulkan-radeon mesa-vaapi mesa-vdpau
 elif [ "$drivers" == "nvidia" ]; then
-  sudo xbps-install -Sy nvidia nvidia-settings
+	sudo xbps-install -Sy nvidia nvidia-settings nvidia-libs nvidia-libs-32bit nvidia-firmware nvidia-dkms nvidia-gtklibs
 else
-  echo "Invalid input. Exiting."
-  exit 1
+	echo "Invalid input. Exiting."
+	exit 1
 fi
-
 echo "Display adapter successfully installed."
-
-##
-# Check for display adapter
-if lspci | grep -q "Intel"; then
-  display="intel"
-elif lspci | grep -q "AMD"; then
-  display="amdgpu"
-elif lspci | grep -q "NVIDIA"; then
-  display="nvidia"
+sleep 1
+if [ "$drivers" = "nvidia" ]; then
+	# The drivers are nvidia, ask the user if they want to copy a configuration and a file
+	read -p "Do you want to copy the nvidia configuration for longboi monitor (yes/no) " longboi
+	if [ "$longboi" = "yes" ]; then
+		# Copy the nvidia configuration
+		cp dotfiles/.nvidia-settings-rc ~/.nvidia-settings-rc
+		cp dotfiles/.screenlayout.sh ~/.config/.screenlayout.sh
+    sudo chmod u+x ~/.config/.screenlayout.sh
+    echo "longboi monitor configured"
+	fi
 else
-  echo "Unable to determine display adapter. Exiting."
-  exit 1
+	echo "Not using longboi I suppose?, continuing with the script."
 fi
 
 # Check if the Xorg configuration file exists
 if [ ! -f "/etc/X11/xorg.conf" ]; then
-  # Create the Xorg configuration file if it does not exist
-  echo "Section \"Device\"" >> /etc/X11/xorg.conf
-  echo "    Identifier  \"Graphics Adapter\"" >> /etc/X11/xorg.conf
-  echo "    Driver      \"$display\"" >> /etc/X11/xorg.conf
-  echo "    Option      \"TearFree\"    \"true\"" >> /etc/X11/xorg.conf
-  echo "EndSection" >> /etc/X11/xorg.conf
+	# Create the Xorg configuration file if it does not exist
+	echo "Section \"Device\"" >>/etc/X11/xorg.conf
+	echo "    Identifier  \"Graphics Adapter\"" >>/etc/X11/xorg.conf
+	echo "    Driver      \"$display\"" >>/etc/X11/xorg.conf
+	echo "    Option      \"TearFree\"    \"true\"" >>/etc/X11/xorg.conf
+	echo "EndSection" >>/etc/X11/xorg.conf
 else
-  # Check if the NoTear option is already set in the Xorg configuration file
-  if ! grep -q "Option      \"TearFree\"" /etc/X11/xorg.conf; then
-    # Add the NoTear option if it is not set
-    sed -i '/Identifier/a \    Option      \"TearFree\"    \"true\"' /etc/X11/xorg.conf
-  fi
+	# Check if the NoTear option is already set in the Xorg configuration file
+	if ! grep -q "Option      \"TearFree\"" /etc/X11/xorg.conf; then
+		# Add the NoTear option if it is not set
+		sed -i '/Identifier/a \    Option      \"TearFree\"    \"true\"' /etc/X11/xorg.conf
+	fi
 fi
-
 echo "NoTear option added to Xorg configuration file."
-
-##
-# Install Cronie for cron jobs
-echo "Installing and Configuring Cronie."
-
-sudo xbps-install -y cronie && \
-sudo ln -sv /etc/sv/cronie /var/service/ && \
-echo "Installation of Cronie completed." || \
-echo "Error installing and enabling Cronie service. Exiting." && exit 1
+sleep 1
 
 ##
 # Install TLP and PowerTop if this is a laptop
@@ -243,188 +282,135 @@ echo "(Powertop/TLP config) Is this a laptop? (yes/no)"
 read -r is_laptop
 
 if [ "$is_laptop" == "yes" ]; then
-  sudo xbps-install -Sy tlp tlp-rdw powertop
-  sudo ln -sv /etc/sv/tlp /var/service
-  echo "tlp, tlp-rdw, and powertop Installed."
+	sudo xbps-install -Sy tlp tlp-rdw powertop
+	sudo ln -sv /etc/sv/tlp /var/service
+	echo "tlp, tlp-rdw, and powertop Installed."
 else
-  echo "Skipping Laptop Power configuration."
+	echo "Skipping Laptop Power configuration."
 fi
-
+sleep 1
 ##
-# Logging Daemon Activation
-# Install a logging Daemon as void does not have one by default
-echo "Logging Daemon Activation."
-sudo xbps-install -Rsy socklog-void && \
-sudo ln -s /etc/sv/socklog-unix /var/service/ && \
-sudo ln -s /etc/sv/nanoklogd /var/service/ && \
-echo "Successfully installed and configured Cronie." || \
-echo "Error installing and enabling Cronie service. Exiting." && exit 1
-
-##
-# Configure Profile Sync Daemon 
-# set up profile sync daemon PSD is a service that symlinks & syncs browser profile
-# directories to RAM, thus reducing HDD/SSD calls & speeding up browsers. You can get
-# it from here. This helps Firefox & Chromium reduce ram usage.
-echo "Pull and Configure Profile Sync Daemon."
-git clone https://github.com/madand/runit-services && \
-cd runit-services && \
-sudo mv psd /etc/sv/ && \
-sudo ln -s /etc/sv/psd /var/service/ && \
-sudo chmod +x etc/sv/psd/* && \
-echo "Successfully installed and configured Profile Sync Daemon." || \
-echo "Failure installing and configuring Profile Sync Daemon. Exiting." && exit 1
-
-##
-# Install fonts 
+# copy fonts
 echo "Installing Fonts."
-sudo xbps-install -Rsy noto-fonts-emoji noto-fonts-ttf noto-fonts-ttf-extra nerd-fonts && \
-echo "Installed Noto and Nerd Fonts." || \
-echo "Error installing Noto and Nerd Fonts. Exiting." && exit 1
-
-# Install Microsoft fonts for compatibility
-git clone https://github.com/void-linux/void-packages
-cd void-packages
-./xbps-src binary-bootstrap
-echo "XBPS_ALLOW_RESTRICTED=yes" >> etc/conf
+sudo xbps-install -Rsy nerd-fonts anthy anthy-unicode font-mplus ipafont-fonts-otf firefox-esr-i18n-ja ibus-anthy libanthy libanthy-unicode  &&
+	echo "Installed Fonts." ||
+	echo "Error installing Fonts. Exiting." && exit 1
+sleep 1
 
 ##
-# Install Syncthing and enable autostart
-echo "Installing Syncthing." 
-sudo xbps-install -Rsy syncthing && \
-sudo cp /usr/share/applications/syncthing-start.desktop ~/.config/autostart/ && \
-echo "Installed Syncthing. Please configure manually." || \
-echo "Failure to install Syncthing. Exiting." && exit 1
-
-##
-# Configure Fish Shell
-cd ~/git/void-autoconfig
-mkdir ~/.config/fish/
-touch ~/.config/fish/config.fish
-# Read alias definitions from a file and add them to the Fish shell config
-while read -r alias; do
-  if echo "$alias" >> ~/.config/fish/config.fish; then
-    echo "Alias added: $alias"
-  else
-    echo "Error adding alias: $alias"
-  fi
-done < fish-aliases.txt
-echo "Aliases added."
-
-##
-# Install Bluetooth and GUI
-if sudo xbps-install -Sy bluez bluez-utils blueman; then
-  echo "Bluetooth software and GUI installed."
+# Install Bluetooth Jazz
+read -p "Do you want to install bluetooth and enable the service? (yes/no) " enable_bt
+if [ "$enable_bt" = "yes" ]; then
+	sudo xbps-install -Sy bluez bluez-alsa libbluetooth blueman
+	sudo ln -s /etc/sv/bluetoothd /var/service/
+	echo "Bluetooth installation and configuration complete."
 else
-  echo "Error installing Bluetooth packages and GUI. Exiting."
-  exit 1
+	echo "Ok fine, you don't want to install bluetooth, continuing with the script."
 fi
-
-# Enable Bluetooth service
-if sudo ln -s /etc/sv/bluetoothd /var/service/; then
-  echo "Bluetooth service enabled."
-else
-  echo "Error enabling Bluetooth service. Exiting."
-  exit 1
-fi
-
-echo "Bluetooth installation adn configuration complete."
-
+sleep 1
 ##
-# Configuring wallpaper 
+# Configuring wallpaper
 echo "Setting wallpaper."
-
-# Set wallpaper file path
-wallpaper_path=~/git/void-autoconfig/wallpaper.png
-
 # Create Pictures/wallpaper directory if it does not exist
 if [ ! -d ~/Pictures/wallpaper ]; then
-  mkdir -p ~/Pictures/wallpaper
+	mkdir -p ~/Pictures/wallpaper
 fi
-
 # Copy wallpaper file to Pictures/wallpaper directory
-if cp "$wallpaper_path" ~/Pictures/wallpaper/; then
-  echo "Wallpaper copied to Pictures/wallpaper directory."
+if cp /dotfiles/wallpaper.png ~/Pictures/wallpaper/wallpaper.png; then
+	echo "Wallpaper copied to Pictures/wallpaper directory."
 else
-  echo "Error copying wallpaper. Exiting."
-  exit 1
+	echo "Error copying wallpaper. Exiting."
+	exit 1
 fi
-
 # Set wallpaper with Nitrogen
 if nitrogen --set-scaled ~/Pictures/wallpaper/wallpaper.png; then
-  echo "Wallpaper set with Nitrogen."
+	echo "Wallpaper set with Nitrogen."
 else
-  echo "Error setting wallpaper with Nitrogen. Exiting."
-  exit 1
+	echo "Error setting wallpaper with Nitrogen. Exiting."
+	exit 1
 fi
-
 echo "Wallpaper set successfully."
+sleep 1
 
 ##
 # Install Flatpak package manager
 echo "Installing Flatpak package manager."
 if sudo xbps-install -Sy flatpak; then
-  echo "Flatpak installed."
+	echo "Flatpak installed."
 else
-  echo "Error installing Flatpak. Exiting."
-  exit 1
+	echo "Error installing Flatpak. Exiting."
+	exit 1
 fi
-
 # Add Flathub repository
 if flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo; then
-  echo "Flathub repository added."
+	echo "Flathub repository added."
 else
-  echo "Error adding Flathub repository. Exiting."
-  exit 1
+	echo "Error adding Flathub repository. Exiting."
+	exit 1
 fi
-
 echo "Flatpak and Flathub repository set up successfully."
+sleep 1
 
 ##
 # Install Nix package manager
 echo "Installing Nix package manager."
-
 if sudo xbps-install -Sy nix; then
-  echo "Nix installed."
+	echo "Nix installed."
 else
-  echo "Error installing Nix. Exiting."
-  exit 1
+	echo "Error installing Nix. Exiting."
+	exit 1
 fi
-
 # Add Nix daemon
 if sudo ln -s /etc/sv/nix-daemon /var/service/; then
-  echo "Nix daemon added."
+	echo "Nix daemon added."
 else
-  echo "Error adding Nix daemon. Exiting."
-  exit 1
+	echo "Error adding Nix daemon. Exiting."
+	exit 1
 fi
-
 # Source profile to pick up changes
 if source /etc/profile; then
-  echo "Profile sourced."
+	echo "Profile sourced."
 else
-  echo "Error sourcing profile. Exiting."
-  exit 1
+	echo "Error sourcing profile. Exiting."
+	exit 1
 fi
-
 # Add all Nix channels
-if nix-channel --add https://nixos.org/channels/nixpkgs-unstable unstable && \
-   nix-channel --add https://nixos.org/channels/nixos-22.05 nixpkgs && \
-   nix-channel --update && \
-   nix-channel --list; then
-  echo "Nix channels added."
+if nix-channel --add https://nixos.org/channels/nixpkgs-unstable unstable &&
+	nix-channel --add https://nixos.org/channels/nixos-22.05 nixpkgs &&
+	nix-channel --update &&
+	nix-channel --list; then
+	echo "Nix channels added."
 else
-  echo "Error adding Nix channels. Exiting."
-  exit 1
+	echo "Error adding Nix channels. Exiting."
+	exit 1
 fi
-
 # Create symlink to applications directory
 if sudo ln -s "$HOME/.nix-profile/share/applications" "$HOME/.local/share/applications/nix-env"; then
-  echo "Symlink to applications directory created."
+	echo "Symlink to applications directory created."
 else
-  echo "Error creating symlink to applications directory. Exiting."
-  exit 1
+	echo "Error creating symlink to applications directory. Exiting."
+	exit 1
+fi
+echo "Nix package manager set up successfully. Now installing some nix packages."
+sleep 1 
+if [ -x "$(which nix)" ]; then
+  echo "nix verified to be installed, installing nix packages."
+  nix-env -iA nixpkgs.google-drive-ocamlfuse
+else
+  echo "nix package manager seems to not exist, skipping installation of nix packages"
 fi
 
-echo "Nix package manager set up successfully."
+##
+# install gamer goodies?
+echo "Would you like to install sweaty gamer goodies? (yes/no)"
+read -r gamer_goodies
+if [ "$gamer_goodies" == "yes" ]; then
+	sudo xbps-install -Sy steam lutris libgcc-32bit libstdc++-32bit libdrm-32bit libglvnd-32bit openmw cavestory dreamchess
+	echo "enjoy procrastination"
+else
+	echo "skipping procrastination proclamation"
+fi
+sleep 1
 
+echo "Script has completed, see logfile.txt in this directory, please restart"
 exit
