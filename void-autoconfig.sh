@@ -170,11 +170,11 @@ else
 fi
 # Create nvim directory if it does not exist
 if [ ! -d "~/.config/nvim" ]; then
-	mkdir "~/.config/nvim"
+	mkdir ~/.config/nvim
 fi
 echo "Configuring best editor."
 # Copy nvim configuration
-if cp -r "dotfiles/nvim/*" "~/.config/nvim/"; then
+if cp -r "dotfiles/nvim/" "~/.config/nvim/"; then
 	echo "Copied NeoVim dots successfully."
 else
 	echo "Error copying nvim dots. Exiting."
