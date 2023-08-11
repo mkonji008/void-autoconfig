@@ -64,7 +64,7 @@ if [ ! -f packages/main_packages.txt ]; then
 fi
 main_packages=$(cat packages/main_packages.txt)
 for main_pkgs in $main_packages; do
-  xbps-install -S $main_pkgs
+  xbps-install -Sy $main_pkgs
   echo "Main system packages installed."
 done
 sleep 1
@@ -99,7 +99,7 @@ if [ -f "packages/developer_packages.txt" ]; then
   read -p "Do you want to install developer doodads? (yes/no) " dev_doodads
   if [ "$dev_doodads" = "yes" ]; then
     while read devstuff; do
-      xbps-install -S $devstuff
+      xbps-install -Sy $devstuff
     done < developer_packages.txt
     echo "Downloading Go..."
   curl -OL https://golang.org/dl/go1.18.3.linux-amd64.tar.gz
