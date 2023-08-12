@@ -10,6 +10,12 @@ sudo -v
 # Redirect output of the script to a log file
 exec > >(tee logfile.txt)
 
+# Prompt the user to enter the username
+read -p "Enter the username: " user_name
+# Confirm the username
+echo "So, you are $user_name, correct? (yes/no) "
+read -r usn_verify
+
 echo "Checking internet access"
 sleep 2
 # Check if there is internet access
@@ -78,14 +84,14 @@ sudo xbps-install -Sy autoconf automake make libtool optipng sassc python python
 
 ##
 echo "Installing ohmybash and copying .bashrc"
-rm ~/.bashrc
-if [ -d ~/.oh-my-bash ]; then
-	rm -rf ~/.oh-my-bash
+rm /home/$user_name/.bashrc
+if [ -d /home/$user_name/.oh-my-bash ]; then
+	rm -rf /home/$user_name/.oh-my-bash
 else
 	echo "oh-my-bash directory does not exist, continuing oh-my-bash installation"
 fi
-if curl -sLf https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh | bash; then
-	cp dotfiles/.bashrc
+if sudo -u $user_name curl -sLf https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh | bash; then
+	cp dotfiles/.bashrc /home/$user_name/.bashrc
 	rm -rf .bashrc.omb-backup-*
 	echo "oh-my-bash has been installed"
 else
@@ -102,17 +108,18 @@ if [ -f "packages/developer_packages.txt" ]; then
 		done <developer_packages.txt
 		echo "Downloading Go..."
 		curl -OL https://golang.org/dl/go1.18.3.linux-amd64.tar.gz
+		mv go*.tar.gz /home/$user_name/
 		echo "Extracting Go..."
-		tar -xzvf go1.18.3.linux-amd64.tar.gz
+		tar -xzvf /home/$user_name/go*.tar.gz
+		rm -rf /home/$user_name/go*.tar.gz
 		echo "Setting Gopath..."
-		export GOPATH=$HOME/go
+		sudo -u $user_name export GOPATH=$user_name/go
 		echo "Adding Go to the PATH..."
-		echo "export PATH=$PATH:$GOPATH/bin" >>~/.bashrc
-		source ~/.bashrc
+		sudo -u $user_name echo "export PATH=$PATH:$GOPATH/bin" >>/home/$user_name/.bashrc
+		source /home/$user_name/.bashrc
 		echo "Go has been installed."
 	else
 		echo "Guess you did not want to install the developer doodads, exiting."
-		exit 1
 	fi
 else
 	echo "The developer_packages.txt file does not exist, exiting."
@@ -133,22 +140,18 @@ sleep 1
 
 ##
 # opendoas config
+# vars set at beginning of script
 echo "Setting up doas, minimal sudo alternative"
 sudo xbps-install -Sy opendoas
-# Prompt the user to enter the username
-read -p "Enter the username: " user_name
-# Confirm the username
-echo "Are you sure your username is $user_name? (yes/no) "
-read -r doas_verify
 # Check if the file does not exist
 if [ ! -f /etc/doas.conf ]; then
 	# Read and verify the username
-	while [[ $doas_verify != "yes" ]] && [[ $doas_verify != "no" ]]; do
+	while [[ $usn_verify != "yes" ]] && [[ $usn_verify != "no" ]]; do
 		echo "Please enter yes or no."
-		read -r doas_verify
+		read -r usn_verify
 	done
 	# Create the doas.conf file
-	if [[ $doas_verify == "yes" ]]; then
+	if [[ $usn_verify == "yes" ]]; then
 		sudo echo "permit persist $user_name as root" >/etc/doas.conf
 		echo "opendoas has been configured for $user_name"
 	else
@@ -169,12 +172,12 @@ else
 	exit 1
 fi
 # Create nvim directory if it does not exist
-if [ ! -d "~/.config/nvim" ]; then
-	mkdir ~/.config/nvim
+if [ ! -d "/home/$user_name/.config/nvim" ]; then
+	mkdir /home/$user_name/.config/nvim
 fi
 echo "Configuring best editor."
 # Copy nvim configuration
-if cp -r dotfiles/nvim/ ~/.config/nvim/; then
+if cp -r dotfiles/nvim/ /home/$user_name/.config/nvim/; then
 	echo "Copied NeoVim dots successfully."
 else
 	echo "Error copying nvim dots. Exiting."
@@ -191,10 +194,10 @@ echo "Now Installing and Configuring $wm."
 # Install selected window manager and copy configuration file
 if [ "$wm" == "i3" ]; then
 	sudo xbps-install -Sy i3
-	mkdir ~/.config/i3
-	cp dotfiles/i3/config ~/.config/i3/config
-	mkdir ~/.config/i3status
-	cp dotfiles/i3status/config ~/.config/i3status/config
+	mkdir /home/$user_name/.config/i3
+	cp dotfiles/i3/config /home/$user_name/.config/i3/config
+	mkdir /home/$user_name/.config/i3status
+	cp dotfiles/i3status/config /home/$user_name/.config/i3status/config
 elif [ "$wm" == "xfce" ]; then
 	# xfce not really setup yet, needs some additonal love
 	sudo xbps-install -Sy xfce4
@@ -219,7 +222,7 @@ echo "Creating home folder structure."
 folders=(Documents Music Pictures Videos Downloads code git)
 # Loop through array and create each folder
 for folder in "${folders[@]}"; do
-	if mkdir "$HOME/$folder"; then
+	if mkdir "/home/$user_name/$folder"; then
 		echo "$folder directory created."
 	else
 		echo "Error creating $folder directory. Exiting."
@@ -230,10 +233,10 @@ sleep 1
 ##
 # copy dotfiles for xfce4-terminal
 echo "Copy dotfiles for xfce4-terminal."
-if [ ! -d ~/.config/xfce4/terminal ]; then
-	mkdir ~/.config/xfce4/terminal
+if [ ! -d /home/$user_name/.config/xfce4/terminal ]; then
+	mkdir /home/$user_name/.config/xfce4/terminal
 fi
-cp -r dotfiles/xfce4/terminal ~/.config/xfce4/terminal
+cp -r dotfiles/xfce4/terminal /home/$user_name/.config/xfce4/terminal
 ##
 # Display Configuration
 # Prompt for what display adapter to install, install it and it's mircrocode
@@ -245,7 +248,7 @@ if [ "$drivers" == "intel" ]; then
 elif [ "$display" == "amd" ]; then
 	sudo xbps-install -Sy linux-firmware-amd xf86-video-amdgpu amd-ucode mesa-dri vulkan-loader mesa-vulkan-radeon mesa-vaapi mesa-vdpau
 elif [ "$drivers" == "nvidia" ]; then
-	sudo xbps-install -Sy nvidia nvidia-settings nvidia-libs nvidia-libs-32bit nvidia-firmware nvidia-dkms nvidia-gtklibs
+	sudo xbps-install -Sy nvidia nvidia-libs nvidia-libs-32bit nvidia-firmware nvidia-dkms nvidia-gtklibs
 else
 	echo "Invalid input. Exiting."
 	exit 1
@@ -257,9 +260,9 @@ if [ "$drivers" = "nvidia" ]; then
 	read -p "Do you want to copy the nvidia configuration for longboi monitor (yes/no) " longboi
 	if [ "$longboi" = "yes" ]; then
 		# Copy the nvidia configuration
-		cp dotfiles/.nvidia-settings-rc ~/.nvidia-settings-rc
-		cp dotfiles/.screenlayout.sh ~/.config/.screenlayout.sh
-		sudo chmod u+x ~/.config/.screenlayout.sh
+		cp dotfiles/.nvidia-settings-rc /home/$user_name/.nvidia-settings-rc
+		cp dotfiles/.screenlayout.sh /home/$user_name/.config/.screenlayout.sh
+		sudo chmod u+x /home/$user_name/.config/.screenlayout.sh
 		echo "longboi monitor configured"
 	fi
 else
@@ -300,7 +303,7 @@ sleep 1
 ##
 # copy fonts
 echo "Installing Fonts."
-sudo xbps-install -Rsy nerd-fonts anthy anthy-unicode font-mplus ipafont-fonts-otf firefox-esr-i18n-ja ibus-anthy libanthy libanthy-unicode &&
+sudo xbps-install -Rsy nerd-fonts anthy anthy-unicode ipafont-fonts-otf firefox-esr-i18n-ja ibus-anthy libanthy libanthy-unicode &&
 	echo "Installed Fonts." ||
 	echo "Error installing Fonts. Exiting." && exit 1
 sleep 1
@@ -320,18 +323,18 @@ sleep 1
 # Configuring wallpaper
 echo "Setting wallpaper."
 # Create Pictures/wallpaper directory if it does not exist
-if [ ! -d ~/Pictures/wallpaper ]; then
-	mkdir -p ~/Pictures/wallpaper
+if [ ! -d /home/$user_name/Pictures/wallpaper ]; then
+	mkdir -p /home/$user_name/Pictures/wallpaper
 fi
 # Copy wallpaper file to Pictures/wallpaper directory
-if cp /dotfiles/wallpaper.png ~/Pictures/wallpaper/wallpaper.png; then
+if cp /dotfiles/wallpaper.png /home/$user_name/Pictures/wallpaper/wallpaper.png; then
 	echo "Wallpaper copied to Pictures/wallpaper directory."
 else
 	echo "Error copying wallpaper. Exiting."
 	exit 1
 fi
 # Set wallpaper with Nitrogen
-if nitrogen --set-scaled ~/Pictures/wallpaper/wallpaper.png; then
+if nitrogen --set-scaled /home/$user_name/Pictures/wallpaper/wallpaper.png; then
 	echo "Wallpaper set with Nitrogen."
 else
 	echo "Error setting wallpaper with Nitrogen. Exiting."
@@ -393,7 +396,7 @@ else
 	exit 1
 fi
 # Create symlink to applications directory
-if sudo ln -s "$HOME/.nix-profile/share/applications" "$HOME/.local/share/applications/nix-env"; then
+if sudo ln -s "/home/$user_name/.nix-profile/share/applications" "/home/$user_name/.local/share/applications/nix-env"; then
 	echo "Symlink to applications directory created."
 else
 	echo "Error creating symlink to applications directory. Exiting."
@@ -403,7 +406,7 @@ echo "Nix package manager set up successfully. Now installing some nix packages.
 sleep 1
 if [ -x "$(which nix)" ]; then
 	echo "nix verified to be installed, installing nix packages."
-	nix-env -iA nixpkgs.google-drive-ocamlfuse
+	sudo -u $user_name nix-env -iA nixpkgs.google-drive-ocamlfuse
 else
 	echo "nix package manager seems to not exist, skipping installation of nix packages"
 fi
