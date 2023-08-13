@@ -92,6 +92,7 @@ else
 fi
 if sudo -u $user_name curl -sLf https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh | bash; then
 	cp dotfiles/.bashrc /home/$user_name/.bashrc
+	cp dotfiles/.oh-my-bash /home/$user_name/.oh-my-bash
 	rm -rf .bashrc.omb-backup-*
 	echo "oh-my-bash has been installed"
 else
