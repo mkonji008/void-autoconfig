@@ -129,18 +129,6 @@ echo "Developer doodads installed"
 sleep 1
 
 ##
-# Install xorg, dbus and elogind and enable their services
-sv check lightdm >/dev/null || exit 1
-sv check dbus >/dev/null || exit 1
-echo "Installing xorg, dbus, and lightdm and enabling services."
-sudo xbps-install -Sy xorg-minimal lightdm lightdm-gtk3-greeter &&
-	sudo ln -s /etc/sv/dbus /var/service/ &&
-	sudo ln -s /etc/sv/lightdm /var/service/ &&
-	echo "Installation and configuration completed" ||
-	echo "Error installing/enabling xorg, dbus and lightdm."
-sleep 1
-
-##
 # opendoas config
 # vars set at beginning of script
 echo "Setting up doas, minimal sudo alternative"
@@ -423,6 +411,16 @@ if [ "$gamer_goodies" == "yes" ]; then
 else
 	echo "skipping procrastination proclamation"
 fi
+sleep 1
+
+##
+# Install xorg, dbus and elogind and enable their services
+echo "Installing xorg, dbus, and lightdm and enabling services."
+sudo xbps-install -Sy xorg-minimal lightdm lightdm-gtk3-greeter &&
+	sudo ln -s /etc/sv/dbus /var/service/ &&
+	sudo ln -s /etc/sv/lightdm /var/service/ &&
+	echo "Installation and configuration completed" ||
+	echo "Error installing/enabling xorg, dbus and lightdm."
 sleep 1
 
 echo "Script has completed, see logfile.txt in this directory, please restart"
