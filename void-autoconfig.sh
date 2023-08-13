@@ -130,6 +130,8 @@ sleep 1
 
 ##
 # Install xorg, dbus and elogind and enable their services
+sv check lightdm >/dev/null || exit 1
+sv check dbus >/dev/null || exit 1
 echo "Installing xorg, dbus, and lightdm and enabling services."
 sudo xbps-install -Sy xorg-minimal lightdm lightdm-gtk3-greeter &&
 	sudo ln -s /etc/sv/dbus /var/service/ &&
